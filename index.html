@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FF14 ARR MSQ Tracker</title>
+<style>
+  :root{
+    --bg:#14110f; --panel:#1d1916; --panel2:#262017; --line:#3a312590;
+    --text:#ece3d4; --text2:#b3a890; --text3:#8a7e69; --accent:#caa94e;
+    --green:#6fae7e; --green-bg:#1d2a20; --amber:#d39a3f; --amber-bg:#2c2212;
+    --blue:#6ea2d3; --blue-bg:#16222e; --purple:#a98fd0; --purple-bg:#211b2c;
+    --radius:10px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);line-height:1.5;
+    background-image:radial-gradient(circle at 50% -10%, #2a2114 0%, var(--bg) 55%);min-height:100vh}
+  .wrap{max-width:880px;margin:0 auto;padding:24px 18px 80px}
+  header h1{font-size:22px;font-weight:600;letter-spacing:.3px}
+  header .sub{color:var(--text2);font-size:13px;margin-top:3px}
+  .accent-rule{height:2px;background:linear-gradient(90deg,var(--accent),transparent);margin:14px 0 18px;border-radius:2px}
+
+  .picker-label{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin:0 0 7px 2px}
+  .combined-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
+  .city-col{display:flex;flex-direction:column;gap:7px}
+  .city-btn{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:11px 10px;cursor:pointer;text-align:center;transition:.15s;color:var(--text2)}
+  .city-btn:hover{background:var(--panel2)}
+  .city-btn.active{border-color:var(--accent);background:var(--panel2);color:var(--text)}
+  .city-btn .cn{display:block;font-size:14px;font-weight:600}
+  .city-btn .cc{display:block;font-size:11px;color:var(--text3);margin-top:2px}
+  .city-btn.active .cc{color:var(--accent)}
+
+  .job-btn{background:var(--panel);border:1px solid var(--line);border-radius:9px;
+    padding:7px 6px;cursor:pointer;text-align:center;transition:.15s;color:var(--text2);font-size:11.5px}
+  .job-btn:hover{background:var(--panel2)}
+  .job-btn.active{border-color:var(--purple);background:var(--purple-bg);color:var(--text)}
+  .job-btn .jn{display:block;font-weight:600;line-height:1.25}
+  .job-btn .jr{display:block;font-size:10px;color:var(--text3);margin-top:1px}
+  .job-btn.active .jr{color:var(--purple)}
+  .job-btn:disabled{opacity:.35;cursor:not-allowed}
+  .job-btn:disabled:hover{background:var(--panel)}
+  .none-btn{width:100%;margin-bottom:18px}
+  @media(max-width:560px){.combined-picker{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}}
+
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:16px;font-size:12px;color:var(--text2)}
+  .legend span{display:flex;align-items:center;gap:5px}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:11px 14px}
+  .stat .l{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+  .stat .v{font-size:20px;font-weight:600;margin-top:2px}
+  .pbar{height:7px;background:var(--panel);border-radius:5px;overflow:hidden;margin:10px 0 6px;border:1px solid var(--line)}
+  .pfill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--green));transition:width .25s}
+
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:14px 0 18px}
+  select,.btn{background:var(--panel);color:var(--text);border:1px solid var(--line);
+    border-radius:8px;padding:7px 11px;font-size:13px;cursor:pointer}
+  .btn:hover,select:hover{background:var(--panel2)}
+
+  .section{border:1px solid var(--line);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;background:var(--panel)}
+  .section.side-req{background:var(--amber-bg);border-color:#5a431c}
+  .section.side-rec{background:var(--blue-bg);border-color:#244055}
+  .sec-head{display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:12px 15px;cursor:pointer;user-select:none}
+  .sec-head:hover{background:#ffffff08}
+  .sec-title{font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .sec-title .sub{font-weight:400;color:var(--text3);font-size:12px}
+  .sec-meta{display:flex;align-items:center;gap:10px;flex-shrink:0}
+  .sec-count{font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums}
+  .sec-pct{font-size:11px;color:var(--accent);font-variant-numeric:tabular-nums;
+    background:#ffffff0c;border-radius:5px;padding:2px 7px;min-width:42px;text-align:center}
+  .sec-checkall{font-size:11px;color:var(--text2);background:transparent;border:1px solid var(--line);
+    border-radius:6px;padding:3px 9px;cursor:pointer;white-space:nowrap}
+  .sec-checkall:hover{background:#ffffff10;color:var(--text)}
+  .chev{transition:transform .2s;color:var(--text3);font-size:12px}
+  .section.collapsed .chev{transform:rotate(-90deg)}
+  .section.collapsed .sec-body{display:none}
+  .sec-body{padding:2px 8px 8px}
+
+  .row{display:flex;align-items:center;gap:11px;padding:8px 9px;border-radius:7px;cursor:pointer}
+  .row:hover{background:#ffffff07}
+  .row.done .qn{color:var(--text3);text-decoration:line-through}
+  .cb{width:19px;height:19px;border:1.6px solid var(--text3);border-radius:5px;flex-shrink:0;position:relative;transition:.12s}
+  .row.done .cb{background:var(--green);border-color:var(--green)}
+  .side-req .row.done .cb{background:var(--amber);border-color:var(--amber)}
+  .side-rec .row.done .cb{background:var(--blue);border-color:var(--blue)}
+  .row.done .cb::after{content:'';position:absolute;left:6px;top:2px;width:5px;height:10px;
+    border:solid #14110f;border-width:0 2px 2px 0;transform:rotate(42deg)}
+  .qn{font-size:13.5px;flex:1;min-width:0}
+  .qnum{color:var(--text3);font-size:12px;min-width:26px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+  .badge{font-size:10px;padding:1px 6px;border-radius:4px;flex-shrink:0;font-weight:600}
+  .b-ms{background:#3a2e10;color:var(--accent)}
+
+  /* nested job quests */
+  .job-nest{margin:2px 0 6px 30px;border-left:2px solid var(--purple);
+    background:var(--purple-bg);border-radius:0 8px 8px 0}
+  .job-nest-label{font-size:11px;color:var(--purple);font-weight:600;padding:6px 10px 2px;
+    display:flex;align-items:center;gap:6px}
+  .job-row{display:flex;align-items:center;gap:10px;padding:5px 10px;cursor:pointer;border-radius:6px}
+  .job-row:hover{background:#ffffff07}
+  .job-row.done .jq{color:var(--text3);text-decoration:line-through}
+  .job-cb{width:16px;height:16px;border:1.5px solid var(--purple);border-radius:4px;flex-shrink:0;position:relative}
+  .job-row.done .job-cb{background:var(--purple);border-color:var(--purple)}
+  .job-row.done .job-cb::after{content:'';position:absolute;left:5px;top:1px;width:4px;height:9px;
+    border:solid #14110f;border-width:0 2px 2px 0;transform:rotate(42deg)}
+  .jlv{font-size:10px;color:var(--purple);min-width:34px;flex-shrink:0;font-weight:600}
+  .jq{font-size:12.5px;flex:1;color:var(--text2)}
+  .jq .unlk{color:var(--purple);font-weight:600}
+  .jhint{font-size:11px;color:var(--text3);font-style:italic;padding:1px 10px 7px 44px}
+  .unlock-banner{display:flex;align-items:center;gap:8px;margin:4px 4px 8px;padding:9px 12px;
+    background:var(--purple-bg);border:1px solid #3c3157;border-left:3px solid var(--purple);
+    border-radius:8px;font-size:12.5px;color:var(--text)}
+  .unlock-banner .ub-icon{color:var(--purple);font-size:14px;flex-shrink:0}
+  .unlock-banner.nested{margin-left:30px}
+
+  .note{font-size:12px;color:var(--text2);padding:6px 9px;font-style:italic}
+  footer{margin-top:30px;font-size:11px;color:var(--text3);text-align:center;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>FF14 &mdash; A Realm Reborn MSQ Tracker</h1>
+    <div class="sub">Main Scenario Quests &middot; patches 2.0&ndash;2.55 &middot; pick your city and (optionally) your job</div>
+    <div class="accent-rule"></div>
+  </header>
+
+  <div class="picker-label">Starting city &amp; job (job shows class/job quests nested under the MSQ &mdash; optional)</div>
+  <div class="combined-picker" id="combinedPicker"></div>
+  <button class="job-btn none-btn" id="noneBtn"></button>
+
+  <div class="legend">
+    <span><span style="color:var(--accent)">&#9733;</span> Milestone</span>
+    <span><span style="color:var(--amber)">&#9650;</span> Required side quest</span>
+    <span><span style="color:var(--blue)">&#9670;</span> Recommended side quest</span>
+    <span><span style="color:var(--purple)">&#9632;</span> Job / class quest</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="l">Completed</div><div class="v" id="sDone">0</div></div>
+    <div class="stat"><div class="l">Remaining</div><div class="v" id="sLeft">0</div></div>
+    <div class="stat"><div class="l">Progress</div><div class="v" id="sPct">0%</div></div>
+  </div>
+  <div class="pbar"><div class="pfill" id="pfill"></div></div>
+
+  <div class="toolbar">
+    <select id="filter">
+      <option value="all">Show: All quests</option>
+      <option value="todo">Show: Incomplete only</option>
+      <option value="done">Show: Completed only</option>
+      <option value="ms">Show: Milestones only</option>
+      <option value="req">Show: Required side quests</option>
+      <option value="rec">Show: Recommended side quests</option>
+    </select>
+    <button class="btn" onclick="setAll(true)">Expand all</button>
+    <button class="btn" onclick="setAll(false)">Collapse all</button>
+    <button class="btn" onclick="resetAll()">Reset checks</button>
+  </div>
+
+  <div id="jobNote" class="note" style="display:none"></div>
+  <div id="list"></div>
+
+  <footer>
+    Progress is kept for this session only.<br>
+    Quest data from Thonky's FFXIV Guide, the FFXIV Lodestone &amp; community wikis &middot; MSQ names reflect the current (patch 7.x) streamlined story.<br>
+    Job-quest <em>levels &amp; locations</em> are accurate; a few exact titles may vary \u2014 the in-game class-quest marker is the authority.
+  </footer>
+</div>
+
+<script>
+const DATA = {"cities": {"gridania": {"name": "Gridania", "classes": "Conjurer · Archer · Lancer", "open": "Coming to Gridania", "quests": ["To the Bannock", "Passing Muster", "Chasing Shadows", "Eggs over Queasy", "Surveying the Damage", "A Soldier's Breakfast", "Spirithold Broken", "On to Bentbranch", "You Shall Not Trespass", "Don't Look Down", "In the Grim Darkness of the Forest", "Threat Level Elevated", "Migrant Marauders", "A Hearer Is Often Late", "Salvaging the Scene", "Leia's Legacy", "Dread Is in the Air", "To Guard a Guardian", "Festive Endeavors", "Renewing the Covenant", "The Gridanian Envoy"]}, "limsa": {"name": "Limsa Lominsa", "classes": "Marauder · Arcanist", "open": "Coming to Limsa Lominsa", "quests": ["Making a Name", "On to Summerford", "Dressed to Call", "Lurkers in the Grotto", "Washed Up", "Double Dealing", "Loam Maintenance", "Plowshares to Swords", "Just Deserts", "Sky-high", "Thanks a Million", "Relighting the Torch", "On to the Drydocks", "Without a Doubt", "Righting the Shipwright", "Do Angry Pirates Dream", "Victory in Peril", "Men of the Blue Tattoos", "Feint and Strike", "High Society", "A Mizzenmast Repast", "The Lominsan Envoy"]}, "uldah": {"name": "Ul'dah", "classes": "Gladiator · Pugilist · Thaumaturge", "open": "Coming to Ul'dah", "quests": ["We Must Rebuild", "Nothing to See Here", "Underneath the Sultantree", "Step Nine", "Prudence at this Junction", "Out of House and Home", "Way Down in the Hole", "Takin' What They're Givin'", "Supply and Demands", "Give It to Me Raw", "The Perfect Swarm", "Last Letter to Lost Hope", "Heir Today, Gone Tomorrow", "Passing the Blade", "Following Footfalls", "Storms on the Horizon", "Oh Captain, My Captain", "Secrets and Lies", "Duty, Honor, Country", "A Matter of Tradition", "A Royal Reception", "The Ul'dahn Envoy"]}}, "shared20": [{"name": "Close to Home", "milestone": false}, {"name": "Call of the Sea", "milestone": false}, {"name": "It's Probably Pirates", "milestone": true}, {"name": "Call of the Forest", "milestone": false}, {"name": "Fire in the Gloom", "milestone": false}, {"name": "Call of the Desert", "milestone": false}, {"name": "Into a Copper Hell", "milestone": false}, {"name": "The Scions of the Seventh Dawn", "milestone": true}, {"name": "A Wild Rose by Any Other Name", "milestone": false}, {"name": "Unsolved Mystery", "milestone": false}, {"name": "What Poor People Think", "milestone": false}, {"name": "A Proper Burial", "milestone": false}, {"name": "For the Children", "milestone": false}, {"name": "Amalj'aa Wrong Places", "milestone": false}, {"name": "Dressed to Deceive", "milestone": false}, {"name": "Life, Materia, and Everything", "milestone": false}, {"name": "Lord of the Inferno", "milestone": true}, {"name": "A Hero in the Making", "milestone": false}, {"name": "The Company You Keep", "milestone": true}, {"name": "(Grand Company 2nd quest)", "milestone": false}, {"name": "Sylph-management", "milestone": false}, {"name": "We Come in Peace", "milestone": false}, {"name": "Sylphic Studies", "milestone": false}, {"name": "First Impressions", "milestone": false}, {"name": "First Contact", "milestone": false}, {"name": "Dance Dance Diplomacy", "milestone": false}, {"name": "Forest Friend", "milestone": false}, {"name": "Presence of the Enemy", "milestone": false}, {"name": "Brotherly Love", "milestone": false}, {"name": "Spirited Away", "milestone": false}, {"name": "Druthers House Rules", "milestone": false}, {"name": "Never Forget", "milestone": false}, {"name": "Microbrewing", "milestone": false}, {"name": "Like Fine Wine", "milestone": false}, {"name": "Sylphish Concerns", "milestone": false}, {"name": "Nouveau Riche", "milestone": false}, {"name": "Into the Beast's Maw", "milestone": false}, {"name": "A Simple Gift", "milestone": false}, {"name": "Believe in Your Sylph", "milestone": false}, {"name": "Back from the Wood", "milestone": false}, {"name": "Shadow of Darkness", "milestone": false}, {"name": "Highbridge Times", "milestone": false}, {"name": "Where There Is Smoke", "milestone": false}, {"name": "On to Little Ala Mhigo", "milestone": false}, {"name": "Tea for Three", "milestone": false}, {"name": "Foot in the Door", "milestone": false}, {"name": "Meeting with the Resistance", "milestone": false}, {"name": "Killing Him Softly", "milestone": false}, {"name": "Helping Horn", "milestone": false}, {"name": "He Ain't Heavy", "milestone": false}, {"name": "Come Highly Recommended", "milestone": false}, {"name": "The Bear and the Young'uns' Cares", "milestone": false}, {"name": "Wilred Wants You", "milestone": false}, {"name": "Big Trouble in Little Ala Mhigo", "milestone": false}, {"name": "Back to Square One", "milestone": false}, {"name": "Terror at Fallgourd", "milestone": false}, {"name": "Ziz is So Ridiculous", "milestone": false}, {"name": "Rock of Rancor", "milestone": false}, {"name": "Seeing Eye to Winged Eye", "milestone": false}, {"name": "Power of Deduction", "milestone": false}, {"name": "Secret of the White Lily", "milestone": false}, {"name": "Skeletons in Her Closet", "milestone": false}, {"name": "Wrath of the Titan", "milestone": false}, {"name": "Tales from the Tidus Slayer", "milestone": false}, {"name": "Hungry Hungry Goobbues", "milestone": false}, {"name": "The Lominsan Way", "milestone": false}, {"name": "Nix That", "milestone": false}, {"name": "A Modest Proposal", "milestone": false}, {"name": "Trial by Turtle", "milestone": false}, {"name": "The Perfect Prey", "milestone": false}, {"name": "When the Worm Turns", "milestone": false}, {"name": "There and Back Again", "milestone": false}, {"name": "The Things We Do for Cheese", "milestone": false}, {"name": "What Do You Mean You Forgot the Wine", "milestone": false}, {"name": "An Offer You Can Refuse", "milestone": false}, {"name": "It Won't Work", "milestone": false}, {"name": "Give a Man a Drink", "milestone": false}, {"name": "That Weight", "milestone": false}, {"name": "Battle Scars", "milestone": false}, {"name": "It Was a Very Good Year", "milestone": false}, {"name": "In the Company of Heroes", "milestone": false}, {"name": "As You Wish", "milestone": false}, {"name": "Lord of Crags", "milestone": true}, {"name": "All Good Things", "milestone": false}, {"name": "You Can't Take it With You", "milestone": false}, {"name": "Bringing Out the Dead", "milestone": false}, {"name": "Bury Me Not on the Lone Prairie", "milestone": false}, {"name": "Eyes on Me", "milestone": false}, {"name": "He Who Waited Behind", "milestone": false}, {"name": "Cold Reception", "milestone": false}, {"name": "The Unending War", "milestone": false}, {"name": "Men of Honor", "milestone": false}, {"name": "Three for Three", "milestone": false}, {"name": "The Rose and the Unicorn", "milestone": false}, {"name": "The Talk of Coerthas", "milestone": false}, {"name": "Road to Redemption", "milestone": false}, {"name": "Following the Evidence", "milestone": false}, {"name": "In the Eyes of Gods and Men", "milestone": false}, {"name": "The Final Flight of the Enterprise", "milestone": false}, {"name": "Ye of Little Faith", "milestone": false}, {"name": "Factual Folklore", "milestone": false}, {"name": "The Best Inventions", "milestone": false}, {"name": "Influencing Inquisitors", "milestone": false}, {"name": "By the Lights of Ishgard", "milestone": false}, {"name": "Blood for Blood", "milestone": false}, {"name": "The Heretic Among Us", "milestone": false}, {"name": "In Pursuit of the Past", "milestone": false}, {"name": "Into the Eye of the Storm", "milestone": false}, {"name": "Sealed with Science", "milestone": false}, {"name": "With the Utmost Care", "milestone": false}, {"name": "A Promising Prospect", "milestone": false}, {"name": "It's Probably Not Pirates", "milestone": false}, {"name": "Representing the Representative", "milestone": false}, {"name": "The Reluctant Researcher", "milestone": false}, {"name": "Sweet Somethings", "milestone": false}, {"name": "History Repeating", "milestone": false}, {"name": "The Curious Case of Giggity", "milestone": false}, {"name": "Better Late than Never", "milestone": false}, {"name": "Lady of the Vortex", "milestone": true}, {"name": "Reclamation", "milestone": false}, {"name": "Casing the Castrum", "milestone": false}, {"name": "Eyes on the Empire", "milestone": false}, {"name": "Footprints in the Snow", "milestone": false}, {"name": "Monumental Hopes", "milestone": false}, {"name": "Notorious Biggs", "milestone": false}, {"name": "Come-Into-My-Castrum", "milestone": false}, {"name": "Getting Even with Garlemald", "milestone": false}, {"name": "Drowning Out the Voices", "milestone": false}, {"name": "Acting the Part", "milestone": false}, {"name": "Dressed for Conquest", "milestone": false}, {"name": "Fool Me Twice", "milestone": false}, {"name": "Every Little Thing She Does is Magitek", "milestone": false}, {"name": "Escape from Castrum Centri", "milestone": false}, {"name": "The Black Wolf's Ultimatum", "milestone": false}, {"name": "Operation Archon", "milestone": false}, {"name": "A Hero in Need", "milestone": false}, {"name": "Hearts on Fire", "milestone": false}, {"name": "Rock the Castrum", "milestone": false}, {"name": "The Ultimate Weapon", "milestone": true}], "postArr": [{"name": "The Price of Principles", "patch": "2.1", "milestone": false}, {"name": "Moving On", "patch": "2.1", "milestone": false}, {"name": "All Things in Time", "patch": "2.1", "milestone": false}, {"name": "Laying the Foundation", "patch": "2.1", "milestone": false}, {"name": "It's Possibly a Primal", "patch": "2.1", "milestone": false}, {"name": "Hail to the King, Kupo", "patch": "2.1", "milestone": false}, {"name": "You Have Selected Regicide", "patch": "2.1", "milestone": false}, {"name": "On the Properties of Primals", "patch": "2.1", "milestone": false}, {"name": "The Gifted", "patch": "2.1", "milestone": false}, {"name": "Build on the Stone", "patch": "2.1", "milestone": false}, {"name": "Still Waters", "patch": "2.2", "milestone": false}, {"name": "A Final Temptation", "patch": "2.2", "milestone": false}, {"name": "The Mother of Exiles", "patch": "2.2", "milestone": false}, {"name": "Promises to Keep", "patch": "2.2", "milestone": false}, {"name": "Yugiri's Game", "patch": "2.2", "milestone": false}, {"name": "Why We Adventure", "patch": "2.2", "milestone": false}, {"name": "All Due Respect", "patch": "2.2", "milestone": false}, {"name": "The Sea Rises", "patch": "2.2", "milestone": false}, {"name": "Scouts in Distress", "patch": "2.2", "milestone": false}, {"name": "The Gift of Eternity", "patch": "2.2", "milestone": false}, {"name": "Into the Heart of the Whorl", "patch": "2.2", "milestone": false}, {"name": "Lord of the Whorl", "patch": "2.2", "milestone": false}, {"name": "When Yugiri Met the Fraternity", "patch": "2.2", "milestone": false}, {"name": "Through the Maelstrom", "patch": "2.2", "milestone": false}, {"name": "The Great Divide", "patch": "2.3", "milestone": false}, {"name": "Desperate Times", "patch": "2.3", "milestone": false}, {"name": "Shock and Awe", "patch": "2.3", "milestone": false}, {"name": "Reap the Whirlwind", "patch": "2.3", "milestone": false}, {"name": "Revolution", "patch": "2.3", "milestone": false}, {"name": "Stories We Tell", "patch": "2.3", "milestone": false}, {"name": "Lord of Levin", "patch": "2.3", "milestone": false}, {"name": "Levin an Impression", "patch": "2.3", "milestone": false}, {"name": "What Little Gods Are Made Of", "patch": "2.3", "milestone": false}, {"name": "Guardian of Eorzea", "patch": "2.3", "milestone": false}, {"name": "Recruiting the Realm", "patch": "2.3", "milestone": false}, {"name": "Heretical Harassment", "patch": "2.3", "milestone": false}, {"name": "When the Cold Sets In", "patch": "2.3", "milestone": false}, {"name": "Brave New Companions", "patch": "2.3", "milestone": false}, {"name": "Traitor in the Midst", "patch": "2.4", "milestone": false}, {"name": "Back and Fourth", "patch": "2.4", "milestone": false}, {"name": "Coming to Terms", "patch": "2.4", "milestone": false}, {"name": "The Intercession of Saints", "patch": "2.4", "milestone": false}, {"name": "Strength in Unity", "patch": "2.4", "milestone": false}, {"name": "Dark Words, Dark Deeds", "patch": "2.4", "milestone": false}, {"name": "First Blood", "patch": "2.4", "milestone": false}, {"name": "The Path of the Righteous", "patch": "2.4", "milestone": false}, {"name": "For the Greater Good", "patch": "2.4", "milestone": false}, {"name": "Tendrils of Intrigue", "patch": "2.4", "milestone": false}, {"name": "Chasing Ivy", "patch": "2.4", "milestone": false}, {"name": "In Flagrante Delicto", "patch": "2.4", "milestone": false}, {"name": "A Simple Plan", "patch": "2.4", "milestone": false}, {"name": "The Instruments of Our Deliverance", "patch": "2.4", "milestone": false}, {"name": "The Road Less Traveled", "patch": "2.4", "milestone": false}, {"name": "Eyes Unclouded", "patch": "2.4", "milestone": false}, {"name": "The Reason Roaille", "patch": "2.4", "milestone": false}, {"name": "Let Us Cling Together", "patch": "2.4", "milestone": false}, {"name": "Good Intentions", "patch": "2.5", "milestone": false}, {"name": "Bait and Switch", "patch": "2.5", "milestone": false}, {"name": "Best Laid Schemes", "patch": "2.5", "milestone": false}, {"name": "The Rising Chorus", "patch": "2.5", "milestone": false}, {"name": "Aether on Demand", "patch": "2.5", "milestone": false}, {"name": "On the Counteroffensive", "patch": "2.5", "milestone": false}, {"name": "An Uninvited Ascian", "patch": "2.5", "milestone": false}, {"name": "In Memory of Moenbryda", "patch": "2.5", "milestone": false}, {"name": "Mask of Grief", "patch": "2.5", "milestone": false}, {"name": "Defenders for Ishgard", "patch": "2.5", "milestone": false}, {"name": "The Wyrm's Roar", "patch": "2.5", "milestone": false}, {"name": "Committed to the Cause", "patch": "2.5", "milestone": false}, {"name": "Volunteer Dragonslayers", "patch": "2.5", "milestone": false}, {"name": "An Allied Perspective", "patch": "2.5", "milestone": false}, {"name": "The Steps of Faith", "patch": "2.5", "milestone": true}, {"name": "Administrative Decision", "patch": "2.55", "milestone": false}, {"name": "An Unexpected Ambition", "patch": "2.55", "milestone": false}, {"name": "Ancient Ways, Timeless Wants", "patch": "2.55", "milestone": false}, {"name": "Where We Are Needed", "patch": "2.55", "milestone": false}, {"name": "The Least among Us", "patch": "2.55", "milestone": false}, {"name": "A Time to Every Purpose", "patch": "2.55", "milestone": false}, {"name": "Come, but Not Gone", "patch": "2.55", "milestone": false}, {"name": "The Parting Glass", "patch": "2.55", "milestone": false}, {"name": "Before the Dawn", "patch": "2.55", "milestone": true}], "reqSide": {"after_ultimate_weapon": {"label": "Primal Hard Modes (required before 2.55)", "quests": ["A Recurring Problem", "Ifrit Bleeds, We Can Kill It", "In For Garuda Awakening", "In a Titan Spot"]}, "crystal_tower_1": {"label": "Crystal Tower Part 1 (required — do after 2.1 MSQ)", "quests": ["Legacy of Allag", "Sanding it Down", "A Performance for the Ages", "Labyrinth of the Ancients"]}, "crystal_tower_2": {"label": "Crystal Tower Part 2 (required — do after 2.3 MSQ)", "quests": ["For Prosperity", "Syrcus Tower", "The World of Darkness", "The Light of Hope"]}}, "recSide": {"after_ultimate_weapon": {"label": "The Binding Coil of Bahamut (recommended — unlock via 'Primal Awakening')", "quests": ["Primal Awakening", "Alisaie's Pledge", "Another Turn in the Coil", "Alisaie's Resolve", "Fragments of Truth", "Alisaie's Path"]}, "hildibrand": {"label": "Hildibrand questline (recommended — start in ARR, continues each expansion)", "quests": ["The Rise and Fall of Gentlemen"]}, "alisaie": {"label": "Alisaie's intro (recommended — backstory for the twins)", "quests": ["An Elf in Mor Dhona"]}}, "jobs": {"paladin": {"name": "Paladin", "base": "Gladiator", "role": "Tank", "guild": "Ul'dah – Gladiators' Guild (Lulutsu / Mylla)", "secondary": "Conjurer Lv15", "class_quests": [["Way of the Gladiator", 1], ["My First Gladius", 1], ["Kicking the Hornet's Nest", 5], ["Bloodbath in the Bowl", 10], ["Bearing the Standard", 15], ["Brother from Another Mother", 20], ["A Matter of Perspective", 25], ["The Rematch", 30]], "unlock": ["Paladin's Pledge", 30], "job_quests": [["Paladin's Pledge", 30], ["The Rematch... Wait, No", 30], ["Sworn Enemies", 35], ["In a Blaze of Glory", 40], ["A Knight's Calling", 45], ["Honor Lost", 50]]}, "warrior": {"name": "Warrior", "base": "Marauder", "role": "Tank", "guild": "Limsa Lominsa – Marauders' Guild (Wyrnzoen)", "secondary": "Gladiator Lv15", "class_quests": [["Way of the Marauder", 1], ["My First Axe", 1], ["Wood's Will Be Done... Marauder", 5], ["Like Hatchet, Like Splinter", 10], ["The Trial of the Ax", 15], ["Severing the Source", 20], ["The Beast Within", 25], ["Wrath Unleashed", 30]], "unlock": ["Pride and Duty (Will Take You from the Mountain)", 30], "job_quests": [["Pride and Duty (Will Take You from the Mountain)", 30], ["Brunhilda", 35], ["Beauty and a Beast", 40], ["A Wolf's Reformation", 45], ["Equilibrium", 50]]}, "monk": {"name": "Monk", "base": "Pugilist", "role": "Melee DPS", "guild": "Ul'dah – Pugilists' Guild (Gagaruna / Hempen)", "secondary": "Lancer Lv15", "class_quests": [["Way of the Pugilist", 1], ["My First Cesti", 1], ["Brother Where Art Thou", 5], ["Ye Who Enter Here", 10], ["The Threefold Path", 15], ["A True Test of Mettle", 20], ["Hammer to the Iron Will", 25], ["Five Easy Pieces", 30]], "unlock": ["Brother from Another Mother", 30], "job_quests": [["Return of the Monk", 30], ["Einternal Calm", 35], ["Whispers of the Heart", 40], ["Just Deserts", 45], ["A Poetic Crisis", 50]]}, "dragoon": {"name": "Dragoon", "base": "Lancer", "role": "Melee DPS", "guild": "Gridania – Lancers' Guild (Jillian / Ywain)", "secondary": "Marauder Lv15", "class_quests": [["Way of the Lancer", 1], ["My First Spear", 1], ["Practice Makes Perfect", 5], ["Sport of Lords", 10], ["A Discerning Eye", 15], ["Sharpening the Spear", 20], ["Trials of the Lance", 25], ["Proof of Might", 30]], "unlock": ["Eye of the Dragon", 30], "job_quests": [["Eye of the Dragon", 30], ["Lured into a Trap", 35], ["Wyrm's Bane", 40], ["Sky-high Aspirations", 45], ["Honor and Vengeance", 50]]}, "bard": {"name": "Bard", "base": "Archer", "role": "Physical Ranged DPS", "guild": "Gridania – Archers' Guild (Athelyna / Luciane)", "secondary": "Pugilist Lv15", "class_quests": [["Way of the Archer", 1], ["My First Bow", 1], ["Surveying the Aftermath", 5], ["Reeling in the Spy", 10], ["A Hunter's True Nature", 15], ["Aim for the Spider", 20], ["Knit One, Purl Two", 25], ["The One That Got Away", 30]], "unlock": ["A Song of Bards and Bowmen", 30], "job_quests": [["A Song of Bards and Bowmen", 30], ["A Bard's-eye View", 35], ["Requiem for the Fallen", 40], ["The Songbird and the Sentinel", 45], ["In the Saint's Wake", 50]]}, "blackmage": {"name": "Black Mage", "base": "Thaumaturge", "role": "Magical Ranged DPS", "guild": "Ul'dah – Thaumaturges' Guild (Yayake / Cocobygo)", "secondary": "Archer Lv15", "class_quests": [["Way of the Thaumaturge", 1], ["My First Scepter", 1], ["Facing Your Demons", 5], ["Cut from a Different Cloth", 10], ["Don't Think, Feel", 15], ["Surviving the Storm", 20], ["Power Overwhelming", 25], ["A Matter of Precision", 30]], "unlock": ["Taking the Black", 30], "job_quests": [["Taking the Black", 30], ["With Great Power...", 35], ["A Mage's Counsel", 40], ["The Enmity of My Enemy", 45], ["The Ultimate Mage", 50]]}, "whitemage": {"name": "White Mage", "base": "Conjurer", "role": "Healer", "guild": "Gridania – Conjurers' Guild (E-Sumi-Yan)", "secondary": "Arcanist Lv15", "class_quests": [["Way of the Conjurer", 1], ["My First Cane", 1], ["Spreading the Wealth", 5], ["Tend My Flock", 10], ["Treant Rights", 15], ["The Histrionics of Auriana", 20], ["A Hippa Heart", 25], ["Leves of Maelvaan", 30]], "unlock": ["In Nature's Embrace", 30], "job_quests": [["In Nature's Embrace", 30], ["A White Mage's True Worth", 35], ["Trials of the Padjal", 40], ["History and Mystery", 45], ["The Promise of Plunder", 50]]}, "scholar": {"name": "Scholar", "base": "Arcanist", "role": "Healer", "guild": "Limsa Lominsa – Arcanists' Guild (Murie / K'lyhia)", "secondary": "Conjurer Lv15 (or just Lv30 ACN + Sylph-management)", "class_quests": [["Way of the Arcanist", 1], ["My First Grimoire", 1], ["Sinking Doesmaga", 5], ["Surviving on the Streets", 10], ["Boom Goes the Sahagin", 15], ["Power of the Land", 20], ["Sunless Roads", 25], ["Wards of Eld", 30]], "unlock": ["Forgotten but Not Gone", 30], "job_quests": [["Forgotten but Not Gone", 30], ["Tactical Withdrawal", 35], ["A Pet Project", 40], ["Forever and Anon", 45], ["And the Words Came Forth", 50]]}, "summoner": {"name": "Summoner", "base": "Arcanist", "role": "Magical Ranged DPS", "guild": "Limsa Lominsa – Arcanists' Guild (Murie / K'rhid)", "secondary": "Thaumaturge Lv15 (or just Lv30 ACN + Sylph-management)", "class_quests": [["Way of the Arcanist", 1], ["My First Grimoire", 1], ["Sinking Doesmaga", 5], ["Surviving on the Streets", 10], ["Boom Goes the Sahagin", 15], ["Power of the Land", 20], ["Sunless Roads", 25], ["Wards of Eld", 30]], "unlock": ["Austerities of Flame", 30], "job_quests": [["Austerities of Flame", 30], ["Awsome Egis", 35], ["Beyond Infinity", 40], ["Knowing One's Limits", 45], ["Primal Burdens", 50]]}}, "jobAnchors": {"1": "open", "5": "open", "10": "open", "15": "It's Probably Pirates", "20": "The Company You Keep", "25": "Back from the Wood", "30": "Lord of Crags", "35": "The Talk of Coerthas", "40": "Lady of the Vortex", "45": "Operation Archon", "50": "Operation Archon"}, "jobNote": "Class quests come every 5 levels (Lv 1, 5, 10, 15, 20, 25, 30). At Lv 30, after finishing the class chain (and having the required secondary class at Lv 15 plus the MSQ Sylph-management done), you get the job-unlock quest and your soul stone, then job quests at Lv 30, 35, 40, 45, 50. The timing below is keyed to when you're back in the right city at roughly the right level during the MSQ — you don't have to do them the instant the level unlocks."};
+
+let city = 'gridania';
+let job = null;            // null = no job selected
+const checked = {};        // id -> true
+const collapsed = {};      // section id -> true
+let filter = 'all';
+
+// ---- Persistence (GitHub Pages / any normal browser) -----------------
+// Saves your progress in this browser via localStorage. It's per-device:
+// progress won't sync to other devices, and clearing site data resets it.
+const STORE_KEY = 'ff14_arr_msq_tracker_v1';
+function saveState(){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify({
+      city, job, filter, checked, collapsed
+    }));
+  }catch(e){ /* storage unavailable (e.g. private mode) — fail silently */ }
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(!raw) return;
+    const s = JSON.parse(raw);
+    if(typeof s.city === 'string') city = s.city;
+    if(s.job === null || typeof s.job === 'string') job = s.job;
+    if(typeof s.filter === 'string') filter = s.filter;
+    if(s.checked && typeof s.checked === 'object')
+      Object.keys(s.checked).forEach(k=>{ if(s.checked[k]) checked[k] = true; });
+    if(s.collapsed && typeof s.collapsed === 'object')
+      Object.keys(s.collapsed).forEach(k=>{ if(s.collapsed[k]) collapsed[k] = true; });
+  }catch(e){ /* corrupt/unavailable — start fresh */ }
+}
+loadState();
+
+const $ = s => document.querySelector(s);
+function qid(s){ return 'q_' + s.replace(/[^a-zA-Z0-9]/g,'_').slice(0,60); }
+function jqid(s,lv){ return 'j_' + s.replace(/[^a-zA-Z0-9]/g,'_').slice(0,50) + '_' + lv; }
+
+// Which city each job's guild sits in (derived from the guild string).
+function guildCity(j){
+  const g = j.guild;
+  if(g.indexOf("Ul'dah")===0) return "Ul'dah";
+  if(g.indexOf("Limsa")===0) return "Limsa Lominsa";
+  if(g.indexOf("Gridania")===0) return "Gridania";
+  return "";
+}
+
+// Thematic, travel-aware hint for a given anchor + the job's guild city.
+// gc = guild city string. Returns a sentence about when/where to grab it.
+function anchorHint(anchor, gc){
+  switch(anchor){
+    case "open":
+      return "Lv 1–10 — do these at the "+gc+" guild while you're starting out "
+        +"(if you started in another city, pick them up once you can travel, around Lv 15+).";
+    case "It's Probably Pirates":
+      // The MSQ tours Limsa -> Gridania -> Ul'dah right here, around Lv 15-17.
+      return "Lv 15 — the story tours all three cities here (Limsa → Gridania → "
+        +"Ul'dah). Swing by the "+gc+" guild while the MSQ has you passing through.";
+    case "The Company You Keep":
+      return "Lv ~20 — you've got airship travel now; hop to "+gc+" for this one when "
+        +"you're near your Grand Company errands.";
+    case "Back from the Wood":
+      return "Lv ~25 — teleport back to "+gc+" between story beats.";
+    case "Lord of Crags":
+      return "Lv ~30 — finish the class chain at the "+gc+" guild and claim your soul "
+        +"stone. After that the job-quest giver moves on (no longer the guild desk).";
+    case "The Talk of Coerthas":
+      return "Lv ~35 — the job line continues with its new questgiver; follow the "
+        +"in-game job-quest marker (it points to a field/town location, not the "+gc+" guild).";
+    case "Lady of the Vortex":
+      return "Lv ~40 — a job-quest step; its location varies, so follow the in-game "
+        +"job-quest marker rather than heading to the "+gc+" guild.";
+    case "Operation Archon":
+      return "Lv ~45–50 — by now you're likely already 50, so knock out the last two job "
+        +"quests together here; follow the in-game job-quest marker for each (locations vary).";
+    default:
+      return "Guild: "+gc;
+  }
+}
+
+// Build {anchorName: [ {label, items:[{name,lv,unlock}]} ]} for the selected job.
+function jobQuestsByAnchor(){
+  const map = {};
+  if(!job) return map;
+  const j = DATA.jobs[job];
+  const push = (anchor, entry)=>{ (map[anchor]=map[anchor]||[]).push(entry); };
+
+  // Group class quests + unlock + job quests by their anchor (via level).
+  const all = [];
+  j.class_quests.forEach(q=>all.push({name:q[0], lv:q[1], kind:'class'}));
+  all.push({name:j.unlock[0], lv:j.unlock[1], kind:'unlock'});
+  j.job_quests.forEach(q=>{
+    if(q[0]===j.unlock[0] && q[1]===j.unlock[1]) return; // avoid dup
+    all.push({name:q[0], lv:q[1], kind:'job'});
+  });
+
+  // Bucket by anchor level
+  all.forEach(q=>{
+    const anchor = DATA.jobAnchors[String(q.lv)] || "The Ultimate Weapon";
+    push(anchor, q);
+  });
+  return map;
+}
+
+function buildSections(){
+  const c = DATA.cities[city];
+  const secs = [];
+  const openItems = [{name:c.open, num:0, ms:false}]
+    .concat(c.quests.map((q,i)=>({name:q, num:i+1, ms:false})));
+  secs.push({id:'open', title:c.name+' opening', sub:c.classes+' &middot; Lv 1–15',
+             type:'msq', anchorKey:'open', items:openItems});
+  secs.push({id:'p20', title:'A Realm Reborn – main story (2.0)', sub:'Lv 15–50',
+             type:'msq', items:DATA.shared20.map((q,i)=>({name:q.name, num:i+1, ms:q.milestone}))});
+  const ru = DATA.reqSide.after_ultimate_weapon;
+  secs.push({id:'req_primal', title:ru.label, sub:'after The Ultimate Weapon',
+             type:'req', items:ru.quests.map((q,i)=>({name:q, num:i+1, ms:false}))});
+  const rc = DATA.recSide.after_ultimate_weapon;
+  secs.push({id:'rec_coil', title:rc.label, sub:'raid story – Coils T1–T13 sit between these',
+             type:'rec', items:rc.quests.map((q,i)=>({name:q, num:i+1, ms:false}))});
+  const hb = DATA.recSide.hildibrand;
+  secs.push({id:'rec_hb', title:hb.label, sub:'start in ARR',
+             type:'rec', items:hb.quests.map((q,i)=>({name:q, num:i+1, ms:false}))});
+  const al = DATA.recSide.alisaie;
+  secs.push({id:'rec_al', title:al.label, sub:'Mor Dhona',
+             type:'rec', items:al.quests.map((q,i)=>({name:q, num:i+1, ms:false}))});
+  const byPatch = {};
+  DATA.postArr.forEach(q=>{ (byPatch[q.patch]=byPatch[q.patch]||[]).push(q); });
+  ['2.1','2.2','2.3','2.4','2.5','2.55'].forEach(p=>{
+    if(!byPatch[p]) return;
+    secs.push({id:'patch_'+p, title:'Post-ARR – Patch '+p, sub:'Lv 50',
+               type:'msq', patch:p,
+               items:byPatch[p].map((q,i)=>({name:q.name, num:i+1, ms:q.milestone}))});
+    if(p==='2.1'){
+      const ct=DATA.reqSide.crystal_tower_1;
+      secs.push({id:'req_ct1', title:ct.label, sub:'alliance raid chain',
+                 type:'req', items:ct.quests.map((q,i)=>({name:q, num:i+1, ms:false}))});
+    }
+    if(p==='2.3'){
+      const ct=DATA.reqSide.crystal_tower_2;
+      secs.push({id:'req_ct2', title:ct.label, sub:'alliance raid chain',
+                 type:'req', items:ct.quests.map((q,i)=>({name:q, num:i+1, ms:false}))});
+    }
+  });
+  return secs;
+}
+
+function itemVisible(it, type){
+  if(filter==='all') return true;
+  const id = qid(it.name);
+  if(filter==='todo') return !checked[id];
+  if(filter==='done') return !!checked[id];
+  if(filter==='ms') return !!it.ms;
+  if(filter==='req') return type==='req';
+  if(filter==='rec') return type==='rec';
+  return true;
+}
+
+// Jobs across all cities unlock once the selected city's penultimate opening
+// quest (the one just before the Envoy — A Royal Reception / Renewing the
+// Covenant / A Mizzenmast Repast) is checked off.
+function jobUnlockQuest(){
+  const qs = DATA.cities[city].quests;
+  return qs[qs.length-2];
+}
+function jobsUnlocked(){
+  return !!checked[qid(jobUnlockQuest())];
+}
+
+function makeJobNest(anchor){
+  // Returns a DOM element with the job quests for this anchor, or null.
+  if(!job || filter==='req' || filter==='rec' || filter==='ms') return null;
+  const jbat = jobQuestsByAnchor();
+  const list = jbat[anchor];
+  if(!list || !list.length) return null;
+  const j = DATA.jobs[job];
+
+  const wrap = document.createElement('div');
+  wrap.className = 'job-nest';
+  const lbl = document.createElement('div');
+  lbl.className = 'job-nest-label';
+  lbl.innerHTML = '&#9632; '+j.name+' quests — '+j.base+' chain';
+  wrap.appendChild(lbl);
+
+  list.sort((a,b)=>a.lv-b.lv).forEach(q=>{
+    const id = jqid(q.name, q.lv);
+    if(filter==='todo' && checked[id]) return;
+    if(filter==='done' && !checked[id]) return;
+    const row = document.createElement('div');
+    row.className = 'job-row' + (checked[id]?' done':'');
+    const nm = q.kind==='unlock'
+      ? '<span class="unlk">'+q.name+'</span> <span style="color:var(--text3)">(soul stone)</span>'
+      : q.name;
+    row.innerHTML = '<span class="jlv">Lv '+q.lv+'</span><span class="job-cb"></span>'+
+                    '<span class="jq">'+nm+'</span>';
+    row.onclick = (e)=>{ e.stopPropagation(); checked[id]=!checked[id]; render(); };
+    wrap.appendChild(row);
+  });
+
+  const hint = document.createElement('div');
+  hint.className='jhint';
+  hint.textContent = anchorHint(anchor, guildCity(j)) + ' · ' + j.guild;
+  wrap.appendChild(hint);
+  return wrap;
+}
+
+function render(){
+  const list = $('#list');
+  list.innerHTML = '';
+  $('#jobNote').style.display = job ? 'block' : 'none';
+  if(job) $('#jobNote').textContent = DATA.jobNote;
+
+  const secs = buildSections();
+  const jbat = jobQuestsByAnchor();
+
+  secs.forEach(sec=>{
+    const visItems = sec.items.filter(it=>itemVisible(it, sec.type));
+    // figure which anchors live in this section
+    const anchorsHere = sec.id==='open'
+      ? ['open']
+      : sec.items.map(it=>it.name).filter(n=>jbat[n]);
+    const hasJobContent = job && anchorsHere.some(a=>jbat[a] && jbat[a].length);
+    if(!visItems.length && !hasJobContent) return;
+
+    // Count MSQ quests plus any job quests nested in this section.
+    let total = sec.items.length;
+    let done = sec.items.filter(it=>checked[qid(it.name)]).length;
+    const secIds = sec.items.map(it=>qid(it.name));
+    if(job){
+      anchorsHere.forEach(a=>{
+        (jbat[a]||[]).forEach(q=>{
+          total++;
+          const jid = jqid(q.name,q.lv);
+          secIds.push(jid);
+          if(checked[jid]) done++;
+        });
+      });
+    }
+    const pct = total ? Math.round(done/total*100) : 0;
+    const allDone = total>0 && done===total;
+    const el = document.createElement('div');
+    el.className = 'section' + (sec.type==='req'?' side-req':sec.type==='rec'?' side-rec':'')
+      + (collapsed[sec.id]?' collapsed':'');
+    const icon = sec.type==='req'?'<span style="color:var(--amber)">&#9650;</span> '
+               : sec.type==='rec'?'<span style="color:var(--blue)">&#9670;</span> ' : '';
+    const head = document.createElement('div');
+    head.className='sec-head';
+    head.innerHTML =
+      '<div class="sec-title">'+icon+sec.title+
+        (sec.sub?' <span class="sub">'+sec.sub+'</span>':'')+'</div>'+
+      '<div class="sec-meta">'+
+        '<button class="sec-checkall">'+(allDone?'Uncheck all':'Check all')+'</button>'+
+        '<span class="sec-count">'+done+'/'+total+'</span>'+
+        '<span class="sec-pct">'+pct+'%</span>'+
+        '<span class="chev">&#9660;</span></div>';
+    head.onclick = ()=>{ collapsed[sec.id]=!collapsed[sec.id]; render(); };
+    head.querySelector('.sec-checkall').onclick = (e)=>{
+      e.stopPropagation();
+      const target = !allDone;            // if not all done -> check all; else uncheck all
+      secIds.forEach(id=>{ checked[id] = target; });
+      render();
+    };
+    el.appendChild(head);
+
+    const body = document.createElement('div');
+    body.className='sec-body';
+
+    // For the opening section, drop the job nest at the top (Lv 1-10 quests).
+    if(sec.id==='open'){
+      const nest = makeJobNest('open');
+      if(nest) body.appendChild(nest);
+    }
+
+    visItems.forEach(it=>{
+      const id = qid(it.name);
+      const row = document.createElement('div');
+      row.className = 'row' + (checked[id]?' done':'');
+      let badges = '';
+      if(it.ms) badges += '<span class="badge b-ms">&#9733; milestone</span>';
+      row.innerHTML =
+        '<span class="qnum">'+(it.num!==undefined?it.num:'')+'</span>'+
+        '<span class="cb"></span>'+
+        '<span class="qn">'+it.name+'</span>'+badges;
+      row.onclick = ()=>{ checked[id]=!checked[id]; render(); };
+      body.appendChild(row);
+
+      // Note about job unlocking, shown under the Envoy quest (last opening quest)
+      // only while a job is selected.
+      if(job && sec.id==='open' && it.name===DATA.cities[city].quests[DATA.cities[city].quests.length-1]){
+        const banner = document.createElement('div');
+        banner.className = 'unlock-banner nested';
+        const unlocked = jobsUnlocked();
+        const head = unlocked
+          ? 'All jobs are now unlocked — you can change the job in the picker above to track any class/job’s quests.'
+          : 'The other cities’ jobs unlock as you complete “'+it.name+'”. If you want to change what class you level during MSQ, check “'+jobUnlockQuest()+'” off to enable every job in the picker above.';
+        banner.innerHTML = '<span class="ub-icon">&#9632;</span><span>'+head
+          + ' <br><span style="color:var(--text2)">Note: you’ll still need to do Levels 1–10 of your chosen starting class. '
+          + 'Right before you leave the relevant major city is a good time to knock those out.</span></span>';
+        body.appendChild(banner);
+      }
+
+      // nest job quests anchored to this MSQ quest
+      const nest = makeJobNest(it.name);
+      if(nest) body.appendChild(nest);
+    });
+    el.appendChild(body);
+    list.appendChild(el);
+  });
+
+  buildPicker();
+  updateStats(secs);
+  saveState();
+}
+
+function updateStats(secs){
+  let ids=[];
+  secs.forEach(s=>s.items.forEach(it=>ids.push(qid(it.name))));
+  if(job){
+    const jbat = jobQuestsByAnchor();
+    Object.values(jbat).forEach(arr=>arr.forEach(q=>ids.push(jqid(q.name,q.lv))));
+  }
+  const uniq = [...new Set(ids)];
+  const done = uniq.filter(id=>checked[id]).length;
+  const total = uniq.length;
+  $('#sDone').textContent = done;
+  $('#sLeft').textContent = total-done;
+  const pct = total? Math.round(done/total*100):0;
+  $('#sPct').textContent = pct+'%';
+  $('#pfill').style.width = pct+'%';
+}
+
+// Which jobs belong under each starting city (by base class home).
+const CITY_JOBS = {
+  uldah:    ['paladin','monk','blackmage'],     // Gladiator, Pugilist, Thaumaturge
+  gridania: ['dragoon','bard','whitemage'],     // Lancer, Archer, Conjurer
+  limsa:    ['warrior','scholar','summoner']    // Marauder, Arcanist
+};
+// Column display order
+const CITY_ORDER = ['uldah','gridania','limsa'];
+
+function buildPicker(){
+  const p = $('#combinedPicker'); p.innerHTML='';
+  const allUnlocked = jobsUnlocked();
+  CITY_ORDER.forEach(ck=>{
+    const c = DATA.cities[ck];
+    const col = document.createElement('div');
+    col.className = 'city-col';
+
+    // City button
+    const cb = document.createElement('button');
+    cb.className = 'city-btn'+(ck===city?' active':'');
+    cb.innerHTML = '<span class="cn">'+c.name+'</span><span class="cc">'+c.classes+'</span>';
+    cb.onclick = ()=>{
+      city=ck;
+      // While still locked, a job must match the selected city; clear if not.
+      if(!jobsUnlocked() && job && !(CITY_JOBS[ck]||[]).includes(job)) job=null;
+      render();
+    };
+    col.appendChild(cb);
+
+    // Jobs: selectable if all jobs are unlocked (envoy done), or if this is
+    // the active starting city.
+    const unlocked = allUnlocked || (ck===city);
+    (CITY_JOBS[ck]||[]).forEach(jk=>{
+      const j = DATA.jobs[jk];
+      if(!j) return;
+      const b = document.createElement('button');
+      b.className='job-btn'+(jk===job?' active':'');
+      b.disabled = !unlocked;
+      b.title = unlocked ? '' :
+        'Complete "'+jobUnlockQuest()+'" (or select '+c.name+') to choose this job';
+      b.innerHTML='<span class="jn">('+j.base+') '+j.name+'</span><span class="jr">'+j.role+'</span>';
+      if(unlocked) b.onclick=()=>{ job=jk; render(); };
+      col.appendChild(b);
+    });
+    p.appendChild(col);
+  });
+
+  // None (MSQ only) job toggle
+  const none = $('#noneBtn');
+  none.className = 'job-btn none-btn'+(job===null?' active':'');
+  none.innerHTML = '<span class="jn">No job selected</span><span class="jr">show MSQ only</span>';
+  none.onclick = ()=>{ job=null; render(); };
+}
+
+function setAll(open){ buildSections().forEach(s=>{ collapsed[s.id]=!open; }); render(); }
+function resetAll(){
+  if(!confirm('Clear all checkmarks (MSQ and job)?')) return;
+  for(const k in checked) delete checked[k];
+  render();
+}
+$('#filter').onchange = e=>{ filter=e.target.value; render(); };
+
+buildPicker();
+render();
+</script>
+</body>
+</html>
