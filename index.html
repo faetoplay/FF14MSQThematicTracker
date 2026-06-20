@@ -180,9 +180,8 @@
       <option value="req">Show: Required side quests</option>
       <option value="rec">Show: Recommended side quests</option>
     </select>
-    <button class="btn" onclick="setAll(true)">Expand all</button>
-    <button class="btn" onclick="setAll(false)">Collapse all</button>
-    <button class="btn" onclick="resetAll()">Reset checks</button>
+    <button class="btn" id="btnExpandAll">Expand all</button>
+    <button class="btn" id="btnCollapseAll">Collapse all</button>
   </div>
 
   <div id="jobNote" class="note" style="display:none"></div>
@@ -828,12 +827,12 @@ function buildTabs(){
 }
 
 function setAll(open){ buildSections().forEach(s=>{ collapsed[s.id]=!open; }); render(); }
-function resetAll(){
-  if(!confirm('Clear all checkmarks (MSQ and job)?')) return;
-  for(const k in checked) delete checked[k];
-  render();
-}
 $('#filter').onchange = e=>{ filter=e.target.value; render(); };
+
+// Bind toolbar buttons in JS (more reliable than inline onclick, which depends
+// on the handlers being resolvable as globals).
+$('#btnExpandAll').onclick = ()=> setAll(true);
+$('#btnCollapseAll').onclick = ()=> setAll(false);
 
 buildTabs();
 render();
