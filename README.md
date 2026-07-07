@@ -1,6 +1,6 @@
 # FF14MSQThematicTracker
 
-A single-page Final Fantasy XIV tracker to help new players experience the A Realm Reborn story (MSQ) in a thematic way. No install, no account — just open it in a browser and check quests off. I will add support only up to where the free trial ends as the story is usually relatively complete at that point.
+A single-page Final Fantasy XIV tracker to help new players experience the Final Fantasy 14 Story (MSQ) in a thematic way. No install, no account — just open it in a browser and check quests off. I will add support only up to where the free trial ends as the story is usually relatively complete at that point. I may add an expansion after at a later date.
 
 **Live here:** https://faetoplay.github.io/FF14MSQThematicTracker/
 
@@ -16,6 +16,8 @@ Saved progress is **per-device** — it won't sync across devices.
 
 ## AI usage and reuse disclosure
 
-AI was used to source information and create this tracker. The prompting that went into the research is biased, based on how I consumed the game. This might not fit how you want to experience the MSQ. If you decide to use this, please understand that I made this on a whim for one device, personal use. It will not save across devices.
+AI was used to source information and create this tracker. The prompting that went into the research is based on how I consumed the game and how I think the game can be experienced in a thematic way. This introduces a natural bias. I am open to suggestions on when to change what, but note they may not be implemented. This might not fit how you want to experience the MSQ.
 
-Again: the intent is to keep it local and isolated for personal use. I will not be offering cross-device or in-game modding support. Anyone is free to use this tracker to build such functionality, I only request that you pay it forward in that you disclose the AI usage.
+Again: the intent is to keep it local, keep it for newbies, and to add a straightforward experience to the world of Eorzea. I will not be offering cross-device or in-game modding support. Anyone is free to use this tracker to build such functionality, I only request that you credit my contribution and that you disclose the AI usage.
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/S4D222RR2H)
