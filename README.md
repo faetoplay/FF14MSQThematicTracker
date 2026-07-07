@@ -14,6 +14,9 @@ Saved progress is **per-device** — it won't sync across devices.
 
 > **Heads up:** progress is stored in your browser's `localStorage`, so it resets if that gets cleared. That can happen if you clear your browsing data / cookies / site data, use the page in a private/incognito window, or have a browser extension or setting that auto-clears site data. Normal refreshing and closing the tab are fine.
 
+## Changelog
+7-7-2026: As it stands, I have completed my goal for this project at this time (up to free trial end). There are some slight tweaks I wish to make and will log them here as they occur. As more expansions get added to the free trial, I will update this tracker.
+
 ## AI usage and reuse disclosure
 
 AI was used to source information and create this tracker. The prompting that went into the research is based on how I consumed the game and how I think the game can be experienced in a thematic way. This introduces a natural bias. I am open to suggestions on when to change what, but note they may not be implemented. This might not fit how you want to experience the MSQ.
