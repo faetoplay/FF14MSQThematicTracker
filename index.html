@@ -204,6 +204,29 @@
     Progress is kept for this session only.<br>
     Quest data from Thonky's FFXIV Guide, the FFXIV Lodestone (Eorzea Database) &amp; community wikis &middot; ARR &amp; Heavensward MSQ.<br>
     Job-quest <em>levels &amp; locations</em> are accurate; a few exact titles may vary \u2014 the in-game class/job-quest marker is the authority.
+    <div id="kofi-slot" style="margin-top:14px">
+      <!-- Ko-fi support button. Color #a8842f = deep gold matching the tracker's
+           --accent (#caa94e) hue, darkened for white-text contrast.
+           Loaded defensively: Ko-fi's stock snippet throws "kofiwidget2 is not
+           defined" if the CDN script is blocked (ad-blockers, sandboxed
+           previews) or slow, and its draw() relies on document.write. Instead
+           we load the script ourselves, init only in onload, and inject via
+           getHTML() into this slot. If the CDN never loads, the button is
+           simply absent and the tracker is unaffected. -->
+      <script type='text/javascript'>
+      (function(){
+        var s = document.createElement('script');
+        s.src = 'https://storage.ko-fi.com/cdn/widget/Widget_2.js';
+        s.onload = function(){
+          try{
+            kofiwidget2.init('Support me on Ko-fi', '#a8842f', 'S4D222RR2H');
+            document.getElementById('kofi-slot').insertAdjacentHTML('beforeend', kofiwidget2.getHTML());
+          }catch(e){ /* widget unavailable; leave slot empty */ }
+        };
+        document.head.appendChild(s);
+      })();
+      </script>
+    </div>
   </footer>
 </div>
 
