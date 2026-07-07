@@ -19,7 +19,7 @@ Saved progress is **per-device** — it won't sync across devices.
 
 ## AI usage and reuse disclosure
 
-AI was used to source information and create this tracker. The prompting that went into the research is based on how I consumed the game and how I think the game can be experienced in a thematic way. This introduces a natural bias. I am open to suggestions on when to change what, but note they may not be implemented. This might not fit how you want to experience the MSQ.
+AI was used to assist in sourcing information and creating this tracker. The the research is based on how I consumed the game and how I think the game can be experienced in a thematic way. This introduces a natural bias. I am open to suggestions on changes, but note they may not be implemented.
 
 Again: the intent is to keep it local, keep it for newbies, and to add a straightforward experience to the world of Eorzea. I will not be offering cross-device or in-game modding support. Anyone is free to use this tracker to build such functionality, I only request that you credit my contribution and that you disclose the AI usage.
 
